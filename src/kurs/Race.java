@@ -2,9 +2,7 @@ package kurs;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -20,10 +18,6 @@ public class Race {
     //этот объект для того, чтобы в главном потоке вывести "гонка закончилась"
     private  final CountDownLatch latchForFinish = new CountDownLatch(CARS_COUNT);
 
-    //а вот этот объект уже для реального старта всех машин
-    //когда все будут готовы и, надеюсь, выведется сообщение "гонка началась"
-    private  final CyclicBarrier barrierForStart = new CyclicBarrier(CARS_COUNT);
-
     //победителя будем проверять и сохранять в этой переменной
     //а так как это критический блок кода, то используем блокировку
     private Car winner = null;
@@ -36,6 +30,12 @@ public class Race {
 
     public void latchForStartCountDown() {
         latchForStart.countDown();
+        //но без этого сообщение о старте выводится не там, где надо
+        try {
+            latchForStart.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     public void latchForFinishCountDown() {
@@ -48,16 +48,6 @@ public class Race {
             latchForStart.await();
             System.out.println("ВАЖНОЕ ОБЪЯВЛЕНИЕ >>> Гонка началась!!!");
         } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void waitForStart() {
-        //ждем тоже, пока все участники не будут готовы
-        //но это уже чтобы стартовать все этапы
-        try {
-            barrierForStart.await();
-        } catch (InterruptedException | BrokenBarrierException e) {
             e.printStackTrace();
         }
     }
